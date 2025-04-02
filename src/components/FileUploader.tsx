@@ -72,7 +72,7 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       formData.append('file', file);
       
       // API request to the N8N webhook
-      const response = await fetch('https://louisetest.app.n8n.cloud/webhook-test/Image2Text', {
+      const response = await fetch('https://louisetest.app.n8n.cloud/webhook/Image2Text', {
         method: 'POST',
         body: formData,
       });
