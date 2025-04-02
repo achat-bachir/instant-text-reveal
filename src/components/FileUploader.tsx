@@ -17,8 +17,7 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
-  const MAX_FILE_SIZE_FREE = 1 * 1024 * 1024; // 1MB
+  const MAX_FILE_SIZE_FREE = 2 * 1024 * 1024; // 1MB
   const MAX_FILE_SIZE_PREMIUM = 5 * 1024 * 1024; // 5MB
   
   const maxFileSize = userPlan === 'premium' ? MAX_FILE_SIZE_PREMIUM : MAX_FILE_SIZE_FREE;
