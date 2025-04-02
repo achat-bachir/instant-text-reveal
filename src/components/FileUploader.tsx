@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { FileUp, X, Loader, FileText } from 'lucide-react';
 
 interface FileUploaderProps {
@@ -17,7 +17,7 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const MAX_FILE_SIZE_FREE = 2 * 1024 * 1024; // 1MB
+  const MAX_FILE_SIZE_FREE = 1 * 1024 * 1024; // 1MB - updated to match API limit
   const MAX_FILE_SIZE_PREMIUM = 5 * 1024 * 1024; // 5MB
   
   const maxFileSize = userPlan === 'premium' ? MAX_FILE_SIZE_PREMIUM : MAX_FILE_SIZE_FREE;
@@ -80,22 +80,48 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       clearInterval(fakeProgress);
       setUploadProgress(100);
       
-      if (!response.ok) {
-        throw new Error('Failed to extract text');
+      const data = await response.json();
+      console.log("API response:", data);
+      
+      // Check for API errors based on the actual response format
+      if (data[0] && data[0].OCRExitCode === 3) {
+        // This is an error response from the API
+        const errorMessages = data[0].ErrorMessage || ["Unknown error occurred"];
+        const errorMessage = Array.isArray(errorMessages) ? errorMessages.join(". ") : errorMessages;
+        
+        toast({
+          title: 'Extraction failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        
+        // Still show the error message in the text area
+        onExtractedText(`Error from OCR service: ${errorMessage}`);
+        return;
       }
       
-      const data = await response.json();
-      
-      // Assuming the API returns the extracted text in a 'text' field
-      // Adjust based on the actual N8N response structure
-      if (data.extractedText) {
+      // Check if we have extracted text
+      if (data[0] && data[0].ParsedResults && data[0].ParsedResults[0] && data[0].ParsedResults[0].ParsedText) {
+        const extractedText = data[0].ParsedResults[0].ParsedText;
+        onExtractedText(extractedText);
+        toast({
+          title: 'Text extracted successfully',
+          description: 'Your file has been processed.',
+        });
+      } else if (data.extractedText) {
+        // Fallback to older response format if present
         onExtractedText(data.extractedText);
         toast({
           title: 'Text extracted successfully',
           description: 'Your file has been processed.',
         });
       } else {
-        throw new Error('No text extracted from the image');
+        // Show the raw API response if no specific text format is found
+        onExtractedText(`API Response: ${JSON.stringify(data, null, 2)}`);
+        toast({
+          title: 'Received response',
+          description: 'Showing raw API response data.',
+        });
       }
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -105,10 +131,12 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
         variant: 'destructive',
       });
       
-      // For demo purposes, let's provide some sample text
-      setTimeout(() => {
-        onExtractedText("This is a sample extracted text. In a real implementation, this would be the text extracted from your image or PDF by the N8N webhook.");
-      }, 500);
+      // For error case, show the actual error
+      if (error instanceof Error) {
+        onExtractedText(`Error: ${error.message}`);
+      } else {
+        onExtractedText("An unknown error occurred during text extraction.");
+      }
     } finally {
       setTimeout(() => {
         setIsUploading(false);
