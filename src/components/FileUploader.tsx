@@ -83,7 +83,35 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       const data = await response.json();
       console.log("API response:", data);
       
-      // Check for API errors based on the actual response format
+      // New handling for the nested JSON structure
+      if (data && Array.isArray(data) && data[0] && data[0].ParsedText) {
+        try {
+          // The ParsedText field contains a JSON string that needs to be parsed
+          const parsedJson = JSON.parse(data[0].ParsedText);
+          
+          // Extract the actual text from the parsed JSON
+          if (parsedJson.ParsedResults && 
+              parsedJson.ParsedResults[0] && 
+              parsedJson.ParsedResults[0].ParsedText) {
+            
+            const extractedText = parsedJson.ParsedResults[0].ParsedText;
+            onExtractedText(extractedText);
+            
+            toast({
+              title: 'Text extracted successfully',
+              description: 'Your file has been processed.',
+            });
+            return;
+          }
+        } catch (parseError) {
+          console.error("Error parsing nested JSON:", parseError);
+          // If it's not valid JSON, just use the ParsedText directly
+          onExtractedText(data[0].ParsedText);
+          return;
+        }
+      }
+      
+      // Fallback to previous handling methods if the new format isn't detected
       if (data[0] && data[0].OCRExitCode === 3) {
         // This is an error response from the API
         const errorMessages = data[0].ErrorMessage || ["Unknown error occurred"];
@@ -100,7 +128,7 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
         return;
       }
       
-      // Check if we have extracted text
+      // Check if we have extracted text in the older format
       if (data[0] && data[0].ParsedResults && data[0].ParsedResults[0] && data[0].ParsedResults[0].ParsedText) {
         const extractedText = data[0].ParsedResults[0].ParsedText;
         onExtractedText(extractedText);
@@ -116,10 +144,10 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
           description: 'Your file has been processed.',
         });
       } else {
-        // Show the raw API response if no specific text format is found
-        onExtractedText(`API Response: ${JSON.stringify(data, null, 2)}`);
+        // If we can't find a recognized format, show a simplified version of the raw response
+        onExtractedText(`Raw API Response: ${JSON.stringify(data, null, 2)}`);
         toast({
-          title: 'Received response',
+          title: 'Unable to extract formatted text',
           description: 'Showing raw API response data.',
         });
       }
