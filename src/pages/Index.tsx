@@ -1,25 +1,44 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { FileUploader } from '@/components/FileUploader';
 import { ResultDisplay } from '@/components/ResultDisplay';
 import { PricingSection } from '@/components/PricingSection';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user } = useAuth();
   const [userPlan, setUserPlan] = useState<'free' | 'premium'>('free');
   const [extractedText, setExtractedText] = useState('');
 
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile) {
+            setUserPlan(profile.plan as 'free' | 'premium');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération du plan utilisateur :', error);
+        }
+      }
+    };
+
+    fetchUserPlan();
+  }, [user]);
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-purple-50">
-      <Navbar 
-        isLoggedIn={isLoggedIn} 
-        setIsLoggedIn={setIsLoggedIn} 
-        userPlan={userPlan} 
-        setUserPlan={setUserPlan} 
-      />
+      <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <section className="text-center mb-12 pt-8">
@@ -32,7 +51,7 @@ const Index = () => {
         </section>
         
         <FileUploader 
-          isLoggedIn={isLoggedIn} 
+          isLoggedIn={!!user} 
           userPlan={userPlan} 
           onExtractedText={setExtractedText}
         />

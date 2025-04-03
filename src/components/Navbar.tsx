@@ -1,49 +1,100 @@
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AuthModal } from '@/components/AuthModal';
 import { useToast } from '@/components/ui/use-toast';
 import { LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
-interface NavbarProps {
-  isLoggedIn: boolean;
-  setIsLoggedIn: (value: boolean) => void;
-  userPlan: 'free' | 'premium';
-  setUserPlan: (value: 'free' | 'premium') => void;
-}
-
-export function Navbar({ isLoggedIn, setIsLoggedIn, userPlan, setUserPlan }: NavbarProps) {
+export function Navbar() {
+  const { user, signOut } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { toast } = useToast();
+  const [userPlan, setUserPlan] = useState<'free' | 'premium'>('free');
 
-  const handleLogout = () => {
-    // Note: Will implement with Supabase
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await signOut();
     setUserPlan('free');
-    toast({
-      title: 'Logged out successfully',
-      description: 'You have been logged out from your account.',
-    });
   };
 
-  const handleUpgradePlan = () => {
-    // In a real implementation, this would redirect to a payment page
-    // For now, we'll just simulate upgrading the plan
-    setUserPlan('premium');
-    toast({
-      title: 'Plan upgraded successfully!',
-      description: 'You now have access to the premium features.',
-    });
+  const handleUpgradePlan = async () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    try {
+      // Récupérer le token d'authentification pour l'API Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Vous devez être connecté pour effectuer cette action');
+      }
+
+      // Appeler la fonction Supabase Edge Functions pour créer un checkout Stripe
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.message) {
+        toast({
+          title: "Information",
+          description: data.message,
+        });
+        return;
+      }
+
+      // Rediriger vers l'URL de paiement Stripe
+      window.location.href = data.url;
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la création du paiement.",
+        variant: "destructive",
+      });
+    }
   };
+
+  // Vérifier l'abonnement de l'utilisateur lors du chargement ou du changement d'utilisateur
+  useState(() => {
+    const checkUserPlan = async () => {
+      if (user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile && profile.plan === 'premium') {
+            setUserPlan('premium');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la vérification du plan:', error);
+        }
+      }
+    };
+    
+    checkUserPlan();
+  }, [user]);
 
   return (
     <nav className="w-full py-4 px-6 sm:px-8 flex justify-between items-center border-b">
       <div className="flex items-center">
-        <h1 className="text-xl font-bold purple-gradient-text">DecryptImage.com</h1>
+        <Link to="/">
+          <h1 className="text-xl font-bold purple-gradient-text">DecryptImage.com</h1>
+        </Link>
       </div>
       
       <div className="flex items-center space-x-2">
-        {isLoggedIn ? (
+        {user ? (
           <>
             {userPlan === 'free' && (
               <Button 
@@ -67,14 +118,12 @@ export function Navbar({ isLoggedIn, setIsLoggedIn, userPlan, setUserPlan }: Nav
           <>
             <Button 
               variant="ghost" 
-              onClick={() => setIsAuthModalOpen(true)}
+              asChild
             >
-              Login
+              <Link to="/auth">Login</Link>
             </Button>
-            <Button 
-              onClick={() => setIsAuthModalOpen(true)}
-            >
-              Sign Up
+            <Button asChild>
+              <Link to="/auth">Sign Up</Link>
             </Button>
           </>
         )}
@@ -83,7 +132,7 @@ export function Navbar({ isLoggedIn, setIsLoggedIn, userPlan, setUserPlan }: Nav
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
-        onSuccess={() => setIsLoggedIn(true)}
+        onSuccess={() => {}}
       />
     </nav>
   );

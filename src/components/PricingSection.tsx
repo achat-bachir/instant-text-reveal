@@ -1,6 +1,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface PricingSectionProps {
   onUpgrade: () => void;
@@ -8,6 +12,53 @@ interface PricingSectionProps {
 }
 
 export function PricingSection({ onUpgrade, userPlan }: PricingSectionProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      // Récupérer le token d'authentification pour l'API Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Vous devez être connecté pour effectuer cette action');
+      }
+
+      // Appeler la fonction Supabase Edge Functions pour créer un checkout Stripe
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.message) {
+        toast({
+          title: "Information",
+          description: data.message,
+        });
+        return;
+      }
+
+      // Rediriger vers l'URL de paiement Stripe
+      window.location.href = data.url;
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la création du paiement.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto my-16 px-4">
       <div className="text-center mb-10">
@@ -80,7 +131,7 @@ export function PricingSection({ onUpgrade, userPlan }: PricingSectionProps) {
           </div>
           
           <div className="mt-6">
-            <span className="text-4xl font-bold">$9.90</span>
+            <span className="text-4xl font-bold">€9.90</span>
             <span className="text-gray-500">/month</span>
           </div>
           
@@ -109,7 +160,7 @@ export function PricingSection({ onUpgrade, userPlan }: PricingSectionProps) {
           
           <Button 
             className="w-full mt-8"
-            onClick={onUpgrade}
+            onClick={handleUpgrade}
             disabled={userPlan === 'premium'}
           >
             {userPlan === 'premium' ? 'Current Plan' : 'Upgrade to Premium'}

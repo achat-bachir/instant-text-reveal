@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Github, Mail, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,30 +27,19 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (type: 'login' | 'signup') => {
-    // Simulating auth for now - will integrate with Supabase later
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Note: In a real implementation, this would be replaced with Supabase auth
-      console.log(`${type === 'login' ? 'Logging in' : 'Signing up'} with`, { email, password });
-      
-      toast({
-        title: type === 'login' ? 'Logged in successfully!' : 'Account created successfully!',
-        description: "Welcome to DecryptImage.com",
-      });
-      
+      if (type === 'login') {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password);
+      }
       onSuccess();
       onClose();
-    } catch (error) {
-      toast({
-        title: 'Authentication error',
-        description: "Something went wrong. Please try again.",
-        variant: 'destructive',
-      });
+    } catch (error: any) {
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -59,23 +49,15 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const handleSocialAuth = async (provider: 'google' | 'github') => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Note: Will implement with Supabase
-      console.log(`Authenticating with ${provider}`);
-      
+      // Note : Cette fonctionnalité requiert une configuration supplémentaire dans Supabase
       toast({
-        title: 'Logged in successfully!',
-        description: `Welcome to DecryptImage.com (via ${provider})`,
+        title: 'Fonctionnalité en cours de développement',
+        description: `L'authentification via ${provider} sera bientôt disponible.`,
       });
-      
-      onSuccess();
-      onClose();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Authentication error',
-        description: "Something went wrong with social login.",
+        title: 'Erreur d\'authentification',
+        description: "Une erreur est survenue lors de la connexion sociale.",
         variant: 'destructive',
       });
       console.error(error);
@@ -89,15 +71,15 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       <DialogContent className="sm:max-w-[425px] animate-fade-in">
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="login">Connexion</TabsTrigger>
+            <TabsTrigger value="signup">Inscription</TabsTrigger>
           </TabsList>
           
           <TabsContent value="login" className="mt-4">
             <DialogHeader>
-              <DialogTitle>Welcome back</DialogTitle>
+              <DialogTitle>Bienvenue</DialogTitle>
               <DialogDescription>
-                Login to your account to continue using DecryptImage.com
+                Connectez-vous à votre compte pour continuer à utiliser DecryptImage.com
               </DialogDescription>
             </DialogHeader>
             
@@ -107,13 +89,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <Input
                   id="email-login"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="vous@exemple.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password-login">Password</Label>
+                <Label htmlFor="password-login">Mot de passe</Label>
                 <Input
                   id="password-login"
                   type="password"
@@ -130,14 +112,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 onClick={() => handleSubmit('login')}
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Login
+                Connexion
               </Button>
               <div className="relative w-full my-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                  <span className="bg-background px-2 text-muted-foreground">ou</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -153,9 +135,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           
           <TabsContent value="signup" className="mt-4">
             <DialogHeader>
-              <DialogTitle>Create an account</DialogTitle>
+              <DialogTitle>Créer un compte</DialogTitle>
               <DialogDescription>
-                Sign up to start using DecryptImage.com
+                Inscrivez-vous pour commencer à utiliser DecryptImage.com
               </DialogDescription>
             </DialogHeader>
             
@@ -165,13 +147,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <Input
                   id="email-signup"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="vous@exemple.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password-signup">Password</Label>
+                <Label htmlFor="password-signup">Mot de passe</Label>
                 <Input
                   id="password-signup"
                   type="password"
@@ -188,14 +170,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 onClick={() => handleSubmit('signup')}
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Sign Up
+                S'inscrire
               </Button>
               <div className="relative w-full my-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                  <span className="bg-background px-2 text-muted-foreground">ou</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
