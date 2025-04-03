@@ -9,6 +9,12 @@ import { Toaster } from '@/components/ui/toaster';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+type Profile = {
+  id: string;
+  plan: 'free' | 'premium';
+  stripe_customer_id: string | null;
+}
+
 const Index = () => {
   const { user } = useAuth();
   const [userPlan, setUserPlan] = useState<'free' | 'premium'>('free');

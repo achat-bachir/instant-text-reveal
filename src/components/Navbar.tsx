@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AuthModal } from '@/components/AuthModal';
@@ -7,6 +7,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+
+type Profile = {
+  id: string;
+  plan: 'free' | 'premium';
+  stripe_customer_id: string | null;
+}
 
 export function Navbar() {
   const { user, signOut } = useAuth();
@@ -63,7 +69,7 @@ export function Navbar() {
   };
 
   // Vérifier l'abonnement de l'utilisateur lors du chargement ou du changement d'utilisateur
-  useState(() => {
+  useEffect(() => {
     const checkUserPlan = async () => {
       if (user) {
         try {
