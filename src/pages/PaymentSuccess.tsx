@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,22 +9,28 @@ import { CheckCircle } from 'lucide-react';
 const PaymentSuccess = () => {
   const { checkSubscription } = useAuth();
   const { toast } = useToast();
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
+    // On ne vérifie la souscription qu'une seule fois au chargement de la page
     const verifySubscription = async () => {
-      try {
-        await checkSubscription();
-        toast({
-          title: "Paiement réussi !",
-          description: "Votre abonnement Premium est maintenant actif.",
-        });
-      } catch (error) {
-        console.error('Erreur lors de la vérification de l\'abonnement:', error);
+      if (!verified) {
+        try {
+          await checkSubscription();
+          setVerified(true);
+          toast({
+            title: "Paiement réussi !",
+            description: "Votre abonnement Premium est maintenant actif.",
+          });
+        } catch (error) {
+          console.error('Erreur lors de la vérification de l\'abonnement:', error);
+          setVerified(true); // Pour éviter de réessayer en boucle
+        }
       }
     };
 
     verifySubscription();
-  }, [checkSubscription, toast]);
+  }, [checkSubscription, toast, verified]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-white to-purple-50">
