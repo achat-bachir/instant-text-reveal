@@ -111,6 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
       
+      if (subscriptionData.subscribed) {
+        // If subscribed, ensure profile is updated to premium
+        try {
+          await supabase
+            .from('profiles')
+            .update({ plan: 'premium' })
+            .eq('id', user?.id);
+        } catch (updateError) {
+          console.error('Error updating profile plan:', updateError);
+        }
+      }
+      
       return subscriptionData.subscribed || false;
     } catch (error) {
       console.error('Error checking subscription:', error);

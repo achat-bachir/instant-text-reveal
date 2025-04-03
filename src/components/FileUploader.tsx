@@ -9,9 +9,17 @@ interface FileUploaderProps {
   isLoggedIn: boolean;
   userPlan: 'free' | 'premium';
   onExtractedText: (text: string) => void;
+  currentExtractionCount: number;
+  onSuccessfulExtraction?: () => void;
 }
 
-export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUploaderProps) {
+export function FileUploader({ 
+  isLoggedIn, 
+  userPlan, 
+  onExtractedText,
+  currentExtractionCount = 0,
+  onSuccessfulExtraction
+}: FileUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -20,7 +28,11 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
   const MAX_FILE_SIZE_FREE = 1 * 1024 * 1024; // 1MB - updated to match API limit
   const MAX_FILE_SIZE_PREMIUM = 5 * 1024 * 1024; // 5MB
   
+  const MAX_EXTRACTIONS_FREE = 10;
+  const MAX_EXTRACTIONS_PREMIUM = 1000;
+  
   const maxFileSize = userPlan === 'premium' ? MAX_FILE_SIZE_PREMIUM : MAX_FILE_SIZE_FREE;
+  const maxExtractions = userPlan === 'premium' ? MAX_EXTRACTIONS_PREMIUM : MAX_EXTRACTIONS_FREE;
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -53,6 +65,16 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
   
   const handleUpload = async () => {
     if (!file) return;
+    
+    // Check if the user has reached their extraction limit
+    if (currentExtractionCount >= maxExtractions) {
+      toast({
+        title: 'Extraction limit reached',
+        description: `You've reached your ${maxExtractions} extractions limit for this month. ${userPlan === 'free' ? 'Upgrade to Premium for more extractions.' : 'Contact support if you need additional capacity.'}`,
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setIsUploading(true);
     setUploadProgress(0);
@@ -101,12 +123,24 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
               title: 'Text extracted successfully',
               description: 'Your file has been processed.',
             });
+            
+            // Increment extraction count
+            if (onSuccessfulExtraction) {
+              onSuccessfulExtraction();
+            }
+            
             return;
           }
         } catch (parseError) {
           console.error("Error parsing nested JSON:", parseError);
           // If it's not valid JSON, just use the ParsedText directly
           onExtractedText(data[0].ParsedText);
+          
+          // Increment extraction count
+          if (onSuccessfulExtraction) {
+            onSuccessfulExtraction();
+          }
+          
           return;
         }
       }
@@ -132,6 +166,12 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       if (data[0] && data[0].ParsedResults && data[0].ParsedResults[0] && data[0].ParsedResults[0].ParsedText) {
         const extractedText = data[0].ParsedResults[0].ParsedText;
         onExtractedText(extractedText);
+        
+        // Increment extraction count
+        if (onSuccessfulExtraction) {
+          onSuccessfulExtraction();
+        }
+        
         toast({
           title: 'Text extracted successfully',
           description: 'Your file has been processed.',
@@ -139,6 +179,12 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       } else if (data.extractedText) {
         // Fallback to older response format if present
         onExtractedText(data.extractedText);
+        
+        // Increment extraction count
+        if (onSuccessfulExtraction) {
+          onSuccessfulExtraction();
+        }
+        
         toast({
           title: 'Text extracted successfully',
           description: 'Your file has been processed.',
@@ -146,6 +192,12 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
       } else {
         // If we can't find a recognized format, show a simplified version of the raw response
         onExtractedText(`Raw API Response: ${JSON.stringify(data, null, 2)}`);
+        
+        // Increment extraction count
+        if (onSuccessfulExtraction) {
+          onSuccessfulExtraction();
+        }
+        
         toast({
           title: 'Unable to extract formatted text',
           description: 'Showing raw API response data.',
@@ -191,8 +243,8 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
         </p>
         <p className="text-sm text-gray-500 mt-1">
           {userPlan === 'premium' 
-            ? 'Premium plan: Up to 5MB files, 1,000 extractions/month' 
-            : 'Free plan: Up to 1MB files, 10 extractions/month'}
+            ? `Premium plan: Up to 5MB files, ${MAX_EXTRACTIONS_PREMIUM} extractions/month (${currentExtractionCount}/${MAX_EXTRACTIONS_PREMIUM} used)` 
+            : `Free plan: Up to 1MB files, ${MAX_EXTRACTIONS_FREE} extractions/month (${currentExtractionCount}/${MAX_EXTRACTIONS_FREE} used)`}
         </p>
       </div>
       
@@ -254,7 +306,7 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
         
         <Button 
           className="w-full"
-          disabled={!file || isUploading}
+          disabled={!file || isUploading || currentExtractionCount >= maxExtractions}
           onClick={handleUpload}
         >
           {isUploading ? (
@@ -262,6 +314,8 @@ export function FileUploader({ isLoggedIn, userPlan, onExtractedText }: FileUplo
               <Loader className="mr-2 h-4 w-4 animate-spin" />
               Processing...
             </>
+          ) : currentExtractionCount >= maxExtractions ? (
+            'Extraction Limit Reached'
           ) : (
             'Extract Text'
           )}
