@@ -73,22 +73,36 @@ export function Navbar() {
     const checkUserPlan = async () => {
       if (user) {
         try {
+          // Force refresh to get latest data
           const { data: profile } = await supabase
             .from('profiles')
             .select('plan')
             .eq('id', user.id)
             .single();
           
-          if (profile && profile.plan === 'premium') {
-            setUserPlan('premium');
+          if (profile && profile.plan) {
+            setUserPlan(profile.plan as 'free' | 'premium');
           }
         } catch (error) {
           console.error('Erreur lors de la vérification du plan:', error);
         }
+      } else {
+        // Reset plan when user logs out
+        setUserPlan('free');
       }
     };
     
     checkUserPlan();
+    
+    // Add subscription to refresh plan data periodically when user is logged in
+    let intervalId: number;
+    if (user) {
+      intervalId = window.setInterval(checkUserPlan, 5000);
+    }
+    
+    return () => {
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, [user]);
 
   return (

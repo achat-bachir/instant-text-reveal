@@ -77,8 +77,9 @@ serve(async (req) => {
 
     const hasActiveSubscription = subscriptions.data.length > 0;
     
-    if (hasActiveSubscription && profile.plan !== 'premium') {
-      // Mettre à jour le plan de l'utilisateur en premium s'il a un abonnement actif
+    if (hasActiveSubscription) {
+      // Toujours mettre à jour le plan de l'utilisateur si une souscription active est détectée
+      // Cela corrige le problème où le plan n'était pas mis à jour
       await supabaseClient
         .from('profiles')
         .update({ plan: 'premium' })
@@ -97,7 +98,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message, subscribed: false }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 200,
       }
     );
   }

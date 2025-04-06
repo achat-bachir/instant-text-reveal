@@ -112,12 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (subscriptionData.subscribed) {
-        // If subscribed, ensure profile is updated to premium
+        // When subscription is active, immediately update profile
         try {
           await supabase
             .from('profiles')
             .update({ plan: 'premium' })
             .eq('id', user?.id);
+            
+          // Add a small delay to ensure DB consistency
+          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (updateError) {
           console.error('Error updating profile plan:', updateError);
         }

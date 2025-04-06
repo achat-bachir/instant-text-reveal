@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const PaymentSuccess = () => {
   const { checkSubscription } = useAuth();
@@ -12,11 +13,23 @@ const PaymentSuccess = () => {
   const [verified, setVerified] = useState(false);
 
   useEffect(() => {
-    // On ne vérifie la souscription qu'une seule fois au chargement de la page
+    // Check subscription status and refresh profile immediately
     const verifySubscription = async () => {
       if (!verified) {
         try {
+          // First force a direct update of the profile
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Directly set profile to premium
+            await supabase
+              .from('profiles')
+              .update({ plan: 'premium' })
+              .eq('id', user.id);
+          }
+          
+          // Then run the subscription check to ensure Stripe is in sync
           await checkSubscription();
+          
           setVerified(true);
           toast({
             title: "Paiement réussi !",

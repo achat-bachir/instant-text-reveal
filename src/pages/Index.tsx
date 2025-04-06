@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { FileUploader } from '@/components/FileUploader';
@@ -20,22 +21,25 @@ const Index = () => {
     const fetchUserPlan = async () => {
       if (user) {
         try {
-          // Prioritize checking subscription status
+          // First check direct profile data as it should be most up-to-date
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile && profile.plan === 'premium') {
+            setUserPlan('premium');
+            return;
+          }
+          
+          // If not premium in profile, verify with Stripe via the function
           const hasActiveSubscription = await checkSubscription();
           
           if (hasActiveSubscription) {
             setUserPlan('premium');
           } else {
-            // Fallback to checking database profile
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('plan')
-              .eq('id', user.id)
-              .single();
-            
-            if (profile) {
-              setUserPlan(profile.plan as 'free' | 'premium');
-            }
+            setUserPlan('free');
           }
         } catch (error) {
           console.error('Error fetching user plan:', error);
