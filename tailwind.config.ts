@@ -82,6 +82,10 @@ export default {
           tertiary: '#6E59A5',
           accent: '#E5DEFF',
           dark: '#1A1F2C',
+        },
+        blue: {
+          600: '#2563eb',
+          700: '#1d4ed8',
         }
 			},
 			borderRadius: {
@@ -131,7 +135,10 @@ export default {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'spin-slow': 'spin-slow 2s linear infinite',
         'pulse': 'pulse 1.5s ease-in-out infinite'
-			}
+			},
+      scrollMargin: {
+        '16': '4rem',
+      }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

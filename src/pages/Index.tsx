@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { Header } from '@/components/Header';
 
 const Index = () => {
   const { user, checkSubscription } = useAuth();
@@ -128,24 +129,16 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-purple-50">
       <Navbar />
+      <Header />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <section className="text-center mb-12 pt-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4 purple-gradient-text animate-fade-in">
-            Extract Text from Any Image or PDF
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '100ms' }}>
-            Upload your files and instantly get all the text content with our powerful extraction tool
-          </p>
-        </section>
-        
-        <FileUploader 
-          isLoggedIn={!!user} 
-          userPlan={userPlan} 
-          onExtractedText={setExtractedText}
-          currentExtractionCount={extractionCount}
-          onSuccessfulExtraction={handleSuccessfulExtraction}
-        />
+        <div id="file-uploader" className="scroll-mt-16">
+          <FileUploader 
+            isLoggedIn={!!user} 
+            userPlan={userPlan} 
+            onExtractedText={setExtractedText}
+          />
+        </div>
         
         {extractedText && <ResultDisplay text={extractedText} />}
         
