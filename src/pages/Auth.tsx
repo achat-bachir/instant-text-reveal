@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Rediriger vers la page d'accueil si l'utilisateur est connecté
   if (user && !loading) {
@@ -33,6 +35,13 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!termsAccepted) {
+      // On pourrait utiliser un toast ici, mais on laisse juste le message d'erreur natif du navigateur
+      alert("Vous devez accepter les conditions générales d'utilisation pour vous inscrire.");
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       await signUp(email, password);
@@ -120,6 +129,28 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-4">
+                  <Checkbox 
+                    id="terms-register" 
+                    checked={termsAccepted}
+                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                    required
+                  />
+                  <Label 
+                    htmlFor="terms-register" 
+                    className="text-sm text-muted-foreground"
+                  >
+                    J'accepte les <a 
+                      href="/terms" 
+                      className="underline text-primary hover:text-primary/80" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      conditions générales d'utilisation
+                    </a> du service
+                  </Label>
                 </div>
                 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Github, Mail, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,10 +27,20 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { toast } = useToast();
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (type: 'login' | 'signup') => {
+    if (type === 'signup' && !termsAccepted) {
+      toast({
+        title: "Conditions générales requises",
+        description: "Vous devez accepter les conditions générales pour vous inscrire.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       if (type === 'login') {
@@ -160,6 +171,26 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+              </div>
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox 
+                  id="terms" 
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                />
+                <Label 
+                  htmlFor="terms" 
+                  className="text-sm text-muted-foreground"
+                >
+                  J'accepte les <a 
+                    href="/terms" 
+                    className="underline text-primary hover:text-primary/80" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    conditions générales d'utilisation
+                  </a> du service
+                </Label>
               </div>
             </div>
             
