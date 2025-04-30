@@ -16,7 +16,7 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // Rediriger vers la page d'accueil si l'utilisateur est connecté
+  // Redirect to home page if user is already logged in
   if (user && !loading) {
     return <Navigate to="/" replace />;
   }
@@ -27,7 +27,7 @@ const Auth = () => {
     try {
       await signIn(email, password);
     } catch (error) {
-      console.error('Erreur de connexion:', error);
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -37,8 +37,7 @@ const Auth = () => {
     e.preventDefault();
     
     if (!termsAccepted) {
-      // On pourrait utiliser un toast ici, mais on laisse juste le message d'erreur natif du navigateur
-      alert("Vous devez accepter les conditions générales d'utilisation pour vous inscrire.");
+      alert("You must accept the Terms of Use to register.");
       return;
     }
     
@@ -46,7 +45,7 @@ const Auth = () => {
     try {
       await signUp(email, password);
     } catch (error) {
-      console.error('Erreur d\'inscription:', error);
+      console.error('Registration error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -68,8 +67,8 @@ const Auth = () => {
           
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              <TabsTrigger value="register">Inscription</TabsTrigger>
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -79,7 +78,7 @@ const Auth = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="vous@exemple.com"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -87,7 +86,7 @@ const Auth = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
+                  <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -101,7 +100,7 @@ const Auth = () => {
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Se connecter
+                  Log in
                 </Button>
               </form>
             </TabsContent>
@@ -113,7 +112,7 @@ const Auth = () => {
                   <Input
                     id="register-email"
                     type="email"
-                    placeholder="vous@exemple.com"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -121,7 +120,7 @@ const Auth = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="register-password">Mot de passe</Label>
+                  <Label htmlFor="register-password">Password</Label>
                   <Input
                     id="register-password"
                     type="password"
@@ -142,14 +141,14 @@ const Auth = () => {
                     htmlFor="terms-register" 
                     className="text-sm text-muted-foreground"
                   >
-                    J'accepte les <a 
+                    I accept the <a 
                       href="/terms" 
                       className="underline text-primary hover:text-primary/80" 
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      conditions générales d'utilisation
-                    </a> du service
+                      Terms of Use
+                    </a> of this service
                   </Label>
                 </div>
                 
@@ -157,7 +156,7 @@ const Auth = () => {
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  S'inscrire
+                  Register
                 </Button>
               </form>
             </TabsContent>
