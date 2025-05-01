@@ -23,14 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Configuration de l'écouteur d'événements d'authentification
+    // Setting up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession) {
-          // Utilisation de setTimeout pour éviter des problèmes avec des callbacks asynchrones
+          // Using setTimeout to avoid issues with asynchronous callbacks
           setTimeout(() => {
             console.log('User signed in:', currentSession.user.email);
           }, 0);
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Vérification de la session existante
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       toast({
-        title: "Erreur de connexion",
-        description: error.message || "Impossible de se connecter. Veuillez réessayer.",
+        title: "Login Error",
+        description: error.message || "Unable to sign in. Please try again.",
         variant: "destructive",
       });
       throw error;
@@ -73,13 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       toast({
-        title: "Inscription réussie",
-        description: "Veuillez vérifier votre email pour confirmer votre compte.",
+        title: "Registration Successful",
+        description: "Please check your email to confirm your account.",
       });
     } catch (error: any) {
       toast({
-        title: "Erreur d'inscription",
-        description: error.message || "Impossible de créer un compte. Veuillez réessayer.",
+        title: "Registration Error",
+        description: error.message || "Unable to create an account. Please try again.",
         variant: "destructive",
       });
       throw error;
@@ -90,13 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Déconnexion réussie",
-        description: "Vous avez été déconnecté avec succès.",
+        title: "Signed Out Successfully",
+        description: "You have been signed out successfully.",
       });
     } catch (error: any) {
       toast({
-        title: "Erreur de déconnexion",
-        description: error.message || "Une erreur est survenue lors de la déconnexion.",
+        title: "Sign Out Error",
+        description: error.message || "An error occurred while signing out.",
         variant: "destructive",
       });
     }

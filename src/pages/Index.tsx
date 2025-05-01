@@ -137,6 +137,8 @@ const Index = () => {
             isLoggedIn={!!user} 
             userPlan={userPlan} 
             onExtractedText={setExtractedText}
+            currentExtractionCount={extractionCount}
+            onSuccessfulExtraction={handleSuccessfulExtraction}
           />
         </div>
         

@@ -9,7 +9,9 @@ interface FileUploaderProps {
   isLoggedIn: boolean;
   userPlan: 'free' | 'premium';
   onExtractedText: (text: string) => void;
-  }
+  currentExtractionCount?: number;
+  onSuccessfulExtraction?: () => void;
+}
 
 export function FileUploader({ 
   isLoggedIn, 
