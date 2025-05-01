@@ -3,7 +3,8 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, X, Loader, FileText } from 'lucide-react';
+import { FileUp, X, Loader, FileText, LogIn } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface FileUploaderProps {
   isLoggedIn: boolean;
@@ -35,6 +36,15 @@ export function FileUploader({
   const maxExtractions = userPlan === 'premium' ? MAX_EXTRACTIONS_PREMIUM : MAX_EXTRACTIONS_FREE;
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isLoggedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login or create an account to use this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
@@ -64,6 +74,15 @@ export function FileUploader({
   };
   
   const handleUpload = async () => {
+    if (!isLoggedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login or create an account to use this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!file) return;
     
     // Check if the user has reached their extraction limit
@@ -231,6 +250,36 @@ export function FileUploader({
       fileInputRef.current.value = '';
     }
   };
+
+  // Show login prompt if user is not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 glass-card">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold purple-gradient-text mb-2">
+            Extract Text from Images & PDFs
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Please login or create an account to use this feature
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button asChild>
+              <Link to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/auth">
+                Create Account
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 glass-card">

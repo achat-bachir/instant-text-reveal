@@ -18,6 +18,13 @@ const Index = () => {
   const [extractionCount, setExtractionCount] = useState(0);
   const { toast } = useToast();
 
+  // Reset extracted text when user logs out
+  useEffect(() => {
+    if (!user && extractedText) {
+      setExtractedText('');
+    }
+  }, [user, extractedText]);
+
   useEffect(() => {
     const fetchUserPlan = async () => {
       if (user) {
@@ -45,6 +52,11 @@ const Index = () => {
         } catch (error) {
           console.error('Error fetching user plan:', error);
         }
+      } else {
+        // Reset to free plan when user logs out
+        setUserPlan('free');
+        // Clear extraction count
+        setExtractionCount(0);
       }
     };
     
@@ -126,6 +138,19 @@ const Index = () => {
     }
   };
 
+  const handleExtractedText = (text: string) => {
+    if (user) {
+      setExtractedText(text);
+    } else {
+      // This shouldn't happen with our new UI, but just in case
+      toast({
+        title: "Authentication Required",
+        description: "Please login or create an account to use this feature.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-purple-50">
       <Navbar />
@@ -136,13 +161,13 @@ const Index = () => {
           <FileUploader 
             isLoggedIn={!!user} 
             userPlan={userPlan} 
-            onExtractedText={setExtractedText}
+            onExtractedText={handleExtractedText}
             currentExtractionCount={extractionCount}
             onSuccessfulExtraction={handleSuccessfulExtraction}
           />
         </div>
         
-        {extractedText && <ResultDisplay text={extractedText} />}
+        {user && extractedText && <ResultDisplay text={extractedText} />}
         
         <PricingSection 
           onUpgrade={() => setUserPlan('premium')} 
