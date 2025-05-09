@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,9 @@ export function FileUploader({
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const MAX_FILE_SIZE_FREE = 1 * 1024 * 1024; // 1MB - updated to match API limit
   const MAX_FILE_SIZE_PREMIUM = 5 * 1024 * 1024; // 5MB
@@ -46,30 +48,87 @@ export function FileUploader({
     }
     
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-      if (!validTypes.includes(selectedFile.type)) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Please upload a valid image (JPEG, PNG, GIF) or PDF file.',
-          variant: 'destructive',
-        });
-        return;
+      validateAndSetFile(e.target.files[0]);
+    }
+  };
+  
+  const validateAndSetFile = (selectedFile: File) => {
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!validTypes.includes(selectedFile.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a valid image (JPEG, PNG, GIF) or PDF file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validate file size
+    if (selectedFile.size > maxFileSize) {
+      toast({
+        title: 'File too large',
+        description: `File size exceeds the ${userPlan === 'premium' ? '5MB' : '1MB'} limit. ${!isLoggedIn || userPlan === 'free' ? 'Upgrade to Premium for larger files.' : ''}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setFile(selectedFile);
+  };
+  
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isLoggedIn) return;
+    setIsDragging(true);
+  };
+  
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isLoggedIn) return;
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isLoggedIn) return;
+    
+    // Check if the mouse has left the dropzone and not just moved between child elements
+    const rect = dropZoneRef.current?.getBoundingClientRect();
+    if (rect) {
+      if (
+        e.clientX < rect.left ||
+        e.clientX >= rect.right ||
+        e.clientY < rect.top ||
+        e.clientY >= rect.bottom
+      ) {
+        setIsDragging(false);
       }
-      
-      // Validate file size
-      if (selectedFile.size > maxFileSize) {
-        toast({
-          title: 'File too large',
-          description: `File size exceeds the ${userPlan === 'premium' ? '5MB' : '1MB'} limit. ${!isLoggedIn || userPlan === 'free' ? 'Upgrade to Premium for larger files.' : ''}`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setFile(selectedFile);
+    }
+  };
+  
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (!isLoggedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login or create an account to use this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      validateAndSetFile(e.dataTransfer.files[0]);
     }
   };
   
@@ -300,12 +359,21 @@ export function FileUploader({
       <div className="space-y-4">
         {!file ? (
           <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-brand-primary transition-colors"
+            ref={dropZoneRef}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragging 
+                ? 'border-brand-primary bg-brand-primary/10' 
+                : 'border-gray-300 hover:border-brand-primary'
+            }`}
             onClick={() => fileInputRef.current?.click()}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
-            <FileUp className="mx-auto h-12 w-12 text-gray-400" />
+            <FileUp className={`mx-auto h-12 w-12 ${isDragging ? 'text-brand-primary' : 'text-gray-400'}`} />
             <p className="mt-2 text-sm text-gray-600">
-              Click to upload or drag and drop
+              {isDragging ? 'Drop to upload' : 'Click to upload or drag and drop'}
             </p>
             <p className="mt-1 text-xs text-gray-500">
               PNG, JPG, GIF or PDF up to {userPlan === 'premium' ? '5MB' : '1MB'}
