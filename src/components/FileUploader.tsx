@@ -113,7 +113,7 @@ export function FileUploader({
       formData.append('file', file);
       
       // API request to the N8N webhook
-      const response = await fetch('https://n8n.decryptimage.com/webhook-test/Image2Text', {
+      const response = await fetch('https://n8n.decryptimage.com/webhook/Image2Text', {
         method: 'POST',
         body: formData,
       });
